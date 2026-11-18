@@ -1,4 +1,3 @@
-tsx
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
@@ -276,7 +275,6 @@ export function TelaTreinos({ userId }: TelaTreinosProps) {
               </div>
             </div>
           ) : (
-                     ) : (
             <button
               onClick={concluirSerie}
               className="w-full py-4 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 shadow-sm transition-colors"
