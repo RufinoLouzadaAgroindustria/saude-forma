@@ -86,11 +86,10 @@ export function Onboarding({ userId, userEmail, onComplete }: OnboardingProps) {
       if (metaError) throw metaError;
 
       await gerarPlanoInicialUsuario(userId, metas, localTreino, restricoesSaude);
-
       onComplete();
     } catch (err) {
       console.error('Erro ao salvar onboarding:', err);
-      alert('Não foi possível salvar seus dados. Verifique sua conexão e tente novamente.');
+      alert('Não foi possível salvar seus dados. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -102,10 +101,7 @@ export function Onboarding({ userId, userEmail, onComplete }: OnboardingProps) {
         <div className="flex justify-between items-center mb-6">
           <span className="text-sm font-medium text-emerald-600">Passo {step} de 3</span>
           <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-emerald-500 transition-all"
-              style={{ width: ((step / 3) * 100) + '%' }}
-            />
+            <div className="h-full bg-emerald-500 transition-all" style={{ width: ((step / 3) * 100) + '%' }} />
           </div>
         </div>
 
@@ -119,28 +115,19 @@ export function Onboarding({ userId, userEmail, onComplete }: OnboardingProps) {
                 value={nome}
                 onChange={(e) => setNome(e.target.value)}
                 placeholder="Ex: Ana Silva"
-                className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                className="w-full p-3 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Sexo Biológico</label>
-              <div className="grid grid-cols-2 gap-3">
-                {(['feminino', 'masculino'] as const).map((op) => (
-                  <button
-                    key={op}
-                    type="button"
-                    onClick={() => setSexo(op)}
-                    className={
-                      'p-3 rounded-xl border font-medium capitalize ' +
-                      (sexo === op
-                        ? 'bg-emerald-50 border-emerald-500 text-emerald-700'
-                        : 'border-slate-200 text-slate-600')
-                    }
-                  >
-                    {op}
-                  </button>
-                ))}
-              </div>
+              <select
+                value={sexo}
+                onChange={(e) => setSexo(e.target.value as 'masculino' | 'feminino')}
+                className="w-full p-3 border border-slate-300 rounded-xl bg-white"
+              >
+                <option value="feminino">Feminino</option>
+                <option value="masculino">Masculino</option>
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Data de Nascimento</label>
@@ -152,6 +139,7 @@ export function Onboarding({ userId, userEmail, onComplete }: OnboardingProps) {
               />
             </div>
             <button
+              type="button"
               onClick={() => setStep(2)}
               disabled={!nome.trim()}
               className="w-full mt-4 bg-emerald-600 text-white font-semibold py-3.5 rounded-xl hover:bg-emerald-700 disabled:opacity-50"
@@ -169,8 +157,6 @@ export function Onboarding({ userId, userEmail, onComplete }: OnboardingProps) {
                 <label className="block text-sm font-medium text-slate-700 mb-1">Altura (cm)</label>
                 <input
                   type="number"
-                  min={120}
-                  max={230}
                   value={alturaCm}
                   onChange={(e) => setAlturaCm(Number(e.target.value))}
                   className="w-full p-3 border border-slate-300 rounded-xl"
@@ -180,8 +166,6 @@ export function Onboarding({ userId, userEmail, onComplete }: OnboardingProps) {
                 <label className="block text-sm font-medium text-slate-700 mb-1">Peso Atual (kg)</label>
                 <input
                   type="number"
-                  min={35}
-                  max={250}
                   value={pesoKg}
                   onChange={(e) => setPesoKg(Number(e.target.value))}
                   className="w-full p-3 border border-slate-300 rounded-xl"
@@ -192,8 +176,6 @@ export function Onboarding({ userId, userEmail, onComplete }: OnboardingProps) {
               <label className="block text-sm font-medium text-slate-700 mb-1">Peso Desejado (kg)</label>
               <input
                 type="number"
-                min={35}
-                max={250}
                 value={pesoMetaKg}
                 onChange={(e) => setPesoMetaKg(Number(e.target.value))}
                 className="w-full p-3 border border-slate-300 rounded-xl"
@@ -213,12 +195,14 @@ export function Onboarding({ userId, userEmail, onComplete }: OnboardingProps) {
             </div>
             <div className="flex gap-3 mt-4">
               <button
+                type="button"
                 onClick={() => setStep(1)}
                 className="w-1/3 py-3.5 border border-slate-300 rounded-xl font-medium text-slate-600"
               >
                 Voltar
               </button>
               <button
+                type="button"
                 onClick={() => setStep(3)}
                 className="w-2/3 bg-emerald-600 text-white font-semibold py-3.5 rounded-xl hover:bg-emerald-700"
               >
@@ -228,7 +212,7 @@ export function Onboarding({ userId, userEmail, onComplete }: OnboardingProps) {
           </div>
         )}
 
-             {step === 3 && (
+        {step === 3 && (
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-slate-800">Sua Rotina e Cuidados</h2>
             <div>
@@ -246,59 +230,41 @@ export function Onboarding({ userId, userEmail, onComplete }: OnboardingProps) {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Onde prefere treinar?</label>
-              <div className="grid grid-cols-3 gap-2">
-                {(['casa', 'academia', 'parque'] as const).map((local) => (
-                  <button
-                    key={local}
-                    type="button"
-                    onClick={() => setLocalTreino(local)}
-                    className={
-                      'p-3 rounded-xl border font-medium capitalize text-sm ' +
-                      (localTreino === local
-                        ? 'bg-emerald-50 border-emerald-500 text-emerald-700'
-                        : 'border-slate-200 text-slate-600')
-                    }
-                  >
-                    {local}
-                  </button>
-                ))}
-              </div>
+              <select
+                value={localTreino}
+                onChange={(e) => setLocalTreino(e.target.value as 'casa' | 'academia' | 'parque')}
+                className="w-full p-3 border border-slate-300 rounded-xl bg-white"
+              >
+                <option value="casa">Em Casa (Peso corporal)</option>
+                <option value="academia">Academia Completa</option>
+                <option value="parque">Parque / Ar livre</option>
+              </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Possui alguma sensibilidade articular? (Opcional)
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { id: 'lesao_joelho', label: 'Joelhos' },
-                  { id: 'lombar', label: 'Coluna / Lombar' },
-                  { id: 'lesao_ombro', label: 'Ombros' },
-                  { id: 'punho', label: 'Punhos' },
-                ].map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => alternarRestricao(item.id)}
-                    className={
-                      'p-2.5 rounded-xl border text-xs font-medium ' +
-                      (restricoesSaude.includes(item.id)
-                        ? 'bg-amber-50 border-amber-400 text-amber-800'
-                        : 'border-slate-200 text-slate-600')
-                    }
-                  >
-                    {item.label}
-                  </button>
+Sensibilidade Articular (Opcional)
+                {['lesao_joelho', 'lombar', 'lesao_ombro', 'punho'].map((id) => (
+                  <label key={id} className="flex items-center gap-2 p-2.5 border border-slate-200 rounded-xl text-xs">
+                    <input
+                      type="checkbox"
+                      checked={restricoesSaude.includes(id)}
+                      onChange={() => alternarRestricao(id)}
+                      className="accent-emerald-600"
+                    />
+                    <span>{id === 'lesao_joelho' ? 'Joelhos' : id === 'lombar' ? 'Lombar' : id === 'lesao_ombro' ? 'Ombros' : 'Punhos'}</span>
+                  </label>
                 ))}
               </div>
             </div>
             <div className="flex gap-3 mt-6">
               <button
+                type="button"
                 onClick={() => setStep(2)}
                 className="w-1/3 py-3.5 border border-slate-300 rounded-xl font-medium text-slate-600"
               >
                 Voltar
               </button>
               <button
+                type="button"
                 onClick={handleFinalizar}
                 disabled={loading}
                 className="w-2/3 bg-emerald-600 text-white font-semibold py-3.5 rounded-xl hover:bg-emerald-700 disabled:opacity-50"
@@ -312,20 +278,4 @@ export function Onboarding({ userId, userEmail, onComplete }: OnboardingProps) {
     </div>
   );
 }
-
-<button
-onClick={() => setStep(2)}
-className="w-1/3 py-3.5 border border-slate-300 rounded-xl font-medium text-slate-600"
->
-Voltar
-
-
-{loading ? 'Gerando Plano...' : 'Criar Meu Plano'}
-
-
-
-)}
-
-
-);
-}
+              
