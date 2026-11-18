@@ -255,7 +255,7 @@ Sensibilidade Articular (Opcional)
                 ))}
               </div>
             </div>
-            <div className="flex gap-3 mt-6">
+                        <div className="flex gap-3 mt-6">
               <button
                 type="button"
                 onClick={() => setStep(2)}
@@ -278,4 +278,3 @@ Sensibilidade Articular (Opcional)
     </div>
   );
 }
-              
