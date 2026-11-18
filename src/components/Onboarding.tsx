@@ -104,7 +104,7 @@ export function Onboarding({ userId, userEmail, onComplete }: OnboardingProps) {
           <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
             <div
               className="h-full bg-emerald-500 transition-all"
-              style={{ width: `${(step / 3) * 100}%` }}
+              style={{ width: ((step / 3) * 100) + '%' }}
             />
           </div>
         </div>
@@ -130,11 +130,12 @@ export function Onboarding({ userId, userEmail, onComplete }: OnboardingProps) {
                     key={op}
                     type="button"
                     onClick={() => setSexo(op)}
-                    className={`p-3 rounded-xl border font-medium capitalize ${
-                      sexo === op
+                    className={
+                      'p-3 rounded-xl border font-medium capitalize ' +
+                      (sexo === op
                         ? 'bg-emerald-50 border-emerald-500 text-emerald-700'
-                        : 'border-slate-200 text-slate-600'
-                    }`}
+                        : 'border-slate-200 text-slate-600')
+                    }
                   >
                     {op}
                   </button>
@@ -227,7 +228,7 @@ export function Onboarding({ userId, userEmail, onComplete }: OnboardingProps) {
           </div>
         )}
 
-        {step === 3 && (
+             {step === 3 && (
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-slate-800">Sua Rotina e Cuidados</h2>
             <div>
@@ -247,39 +248,74 @@ export function Onboarding({ userId, userEmail, onComplete }: OnboardingProps) {
               <label className="block text-sm font-medium text-slate-700 mb-1">Onde prefere treinar?</label>
               <div className="grid grid-cols-3 gap-2">
                 {(['casa', 'academia', 'parque'] as const).map((local) => (
-<button
-key={local}
-type="button"
-onClick={() => setLocalTreino(local)}
-className={`p-3 rounded-xl border font-medium capitalize text-sm ${localTreino === local ? 'bg-emerald-50 border-emerald-500 text-emerald-700' : 'border-slate-200 text-slate-600'}`}
->
-{local}
-
-))}
-
-
-Possui alguma sensibilidade articular? (Opcional)
-{[
-{ id: 'lesao_joelho', label: 'Joelhos' },
-{ id: 'lombar', label: 'Coluna / Lombar' },
-{ id: 'lesao_ombro', label: 'Ombros' },
-{ id: 'punho', label: 'Punhos' },
-].map((item) => (
-<button
-key={item.id}
-type="button"
-onClick={() => alternarRestricao(item.id)}
-className={'p-2.5 rounded-xl border text-xs font-medium ${ restricoesSaude.includes(item.id) ? 'bg-amber-50 border-amber-400 text-amber-800' : 'border-slate-200 text-slate-600' }}
->
-{item.label}
-
-))}
-
-
+                  <button
+                    key={local}
+                    type="button"
+                    onClick={() => setLocalTreino(local)}
+                    className={
+                      'p-3 rounded-xl border font-medium capitalize text-sm ' +
+                      (localTreino === local
+                        ? 'bg-emerald-50 border-emerald-500 text-emerald-700'
+                        : 'border-slate-200 text-slate-600')
+                    }
+                  >
+                    {local}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Possui alguma sensibilidade articular? (Opcional)
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { id: 'lesao_joelho', label: 'Joelhos' },
+                  { id: 'lombar', label: 'Coluna / Lombar' },
+                  { id: 'lesao_ombro', label: 'Ombros' },
+                  { id: 'punho', label: 'Punhos' },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => alternarRestricao(item.id)}
+                    className={
+                      'p-2.5 rounded-xl border text-xs font-medium ' +
+                      (restricoesSaude.includes(item.id)
+                        ? 'bg-amber-50 border-amber-400 text-amber-800'
+                        : 'border-slate-200 text-slate-600')
+                    }
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setStep(2)}
+                className="w-1/3 py-3.5 border border-slate-300 rounded-xl font-medium text-slate-600"
+              >
+                Voltar
+              </button>
+              <button
+                onClick={handleFinalizar}
+                disabled={loading}
+                className="w-2/3 bg-emerald-600 text-white font-semibold py-3.5 rounded-xl hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {loading ? 'Gerando Plano...' : 'Criar Meu Plano'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 <button
 onClick={() => setStep(2)}
-className="'w-1/3 py-3.5 border border-slate-300 rounded-xl font-medium text-slate-600'"
+className="w-1/3 py-3.5 border border-slate-300 rounded-xl font-medium text-slate-600"
 >
 Voltar
 
