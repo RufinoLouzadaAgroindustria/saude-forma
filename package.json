@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@neondatabase/neon-js": "^0.1.0",
+    "@neondatabase/neon-js": "latest",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
@@ -23,4 +23,3 @@
     "vite": "^6.0.0"
   }
 }
-
