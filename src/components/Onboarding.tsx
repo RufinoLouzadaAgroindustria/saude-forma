@@ -251,7 +251,7 @@ export function Onboarding({ userId, userEmail, onComplete }: OnboardingProps) {
 key={local}
 type="button"
 onClick={() => setLocalTreino(local)}
-className={p-3 rounded-xl border font-medium capitalize text-sm ${ localTreino === local ? 'bg-emerald-50 border-emerald-500 text-emerald-700' : 'border-slate-200 text-slate-600' }}
+className={`p-3 rounded-xl border font-medium capitalize text-sm ${localTreino === local ? 'bg-emerald-50 border-emerald-500 text-emerald-700' : 'border-slate-200 text-slate-600'}`}
 >
 {local}
 
@@ -269,7 +269,7 @@ Possui alguma sensibilidade articular? (Opcional)
 key={item.id}
 type="button"
 onClick={() => alternarRestricao(item.id)}
-className={p-2.5 rounded-xl border text-xs font-medium ${ restricoesSaude.includes(item.id) ? 'bg-amber-50 border-amber-400 text-amber-800' : 'border-slate-200 text-slate-600' }}
+className={'p-2.5 rounded-xl border text-xs font-medium ${ restricoesSaude.includes(item.id) ? 'bg-amber-50 border-amber-400 text-amber-800' : 'border-slate-200 text-slate-600' }}
 >
 {item.label}
 
@@ -279,7 +279,7 @@ className={p-2.5 rounded-xl border text-xs font-medium ${ restricoesSaude.includ
 
 <button
 onClick={() => setStep(2)}
-className="w-1/3 py-3.5 border border-slate-300 rounded-xl font-medium text-slate-600"
+className="'w-1/3 py-3.5 border border-slate-300 rounded-xl font-medium text-slate-600'"
 >
 Voltar
 
