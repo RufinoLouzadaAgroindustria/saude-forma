@@ -277,12 +277,12 @@ function TelaEvolucao({ userId }: { userId: string }) {
     if (data) setHistorico(data);
   };
 
-  const registrarPesagem = async (e: React.FormEvent) => {
+   const registrarPesagem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pesoAtual) return;
 
     setSalvando(true);
-    const hojeStr = new Date().toISOString().split('T');
+    const hojeStr = new Date().toISOString().split('T')[0];
 
     await supabase.from('logs_evolucao').upsert(
       {
@@ -319,59 +319,76 @@ function TelaEvolucao({ userId }: { userId: string }) {
         onSubmit={registrarPesagem}
         className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3"
       >
-Registrar Medidas de Hoje
+        <h2 className="font-semibold text-slate-800">Registrar Medidas de Hoje</h2>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-slate-500 mb-1">Peso (kg)</label>
+            <input
+              type="number"
+              step="0.1"
+              required
+              value={pesoAtual}
+              onChange={(e) => setPesoAtual(e.target.value)}
+              placeholder="Ex: 74.5"
+              className="w-full p-2.5 border border-slate-300 rounded-xl text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-slate-500 mb-1">
+              Cintura (cm - opcional)
+            </label>
+            <input
+              type="number"
+              step="0.5"
+              value={cinturaAtual}
+              onChange={(e) => setCinturaAtual(e.target.value)}
+              placeholder="Ex: 82"
+              className="w-full p-2.5 border border-slate-300 rounded-xl text-sm"
+            />
+          </div>
+        </div>
+        <button
+          type="submit"
+          disabled={salvando}
+          className="w-full py-3 bg-emerald-600 text-white font-semibold rounded-xl text-sm hover:bg-emerald-700"
+        >
+          {salvando ? 'Salvando...' : 'Salvar Registro'}
+        </button>
+      </form>
 
-Peso (kg)
-<input
-type="number"
-step="0.1"
-required
-value={pesoAtual}
-onChange={(e) => setPesoAtual(e.target.value)}
-placeholder="Ex: 74.5"
-className="w-full p-2.5 border border-slate-300 rounded-xl text-sm"
-/>
-
-Cintura (cm - opcional)
-<input
-type="number"
-step="0.5"
-value={cinturaAtual}
-onChange={(e) => setCinturaAtual(e.target.value)}
-placeholder="Ex: 82"
-className="w-full p-2.5 border border-slate-300 rounded-xl text-sm"
-/>
-
-
-
-{salvando ? 'Salvando...' : 'Salvar Registro'}
-
-Histórico Recente
-{historico.length === 0 ? (
-
-Nenhum registro de peso lançado ainda.
-
-) : (
-
-{historico.map((item) => (
-
-
-{new Date(item.data_registro + 'T12:00:00').toLocaleDateString(
-'pt-BR'
-)}
-
-
-{item.peso_kg} kg
-{item.cintura_cm && (
-
-({item.cintura_cm} cm)
-
-)}
-
-
-))}
-
-)}
-
-);
+      <section className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+        <h2 className="font-semibold text-slate-800">Histórico Recente</h2>
+        {historico.length === 0 ? (
+          <p className="text-xs text-slate-500">
+            Nenhum registro de peso lançado ainda.
+          </p>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {historico.map((item) => (
+              <div
+                key={item.data_registro}
+                className="py-2.5 flex justify-between items-center text-sm"
+              >
+                <span className="text-slate-600">
+                  {new Date(item.data_registro + 'T12:00:00').toLocaleDateString(
+                    'pt-BR'
+                  )}
+                </span>
+                <div className="font-semibold text-slate-800">
+                  {item.peso_kg} kg
+                  {item.cintura_cm && (
+                    <span className="text-xs font-normal text-slate-500 ml-2">
+                      ({item.cintura_cm} cm)
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
+  );
 }
+
+export default App;
