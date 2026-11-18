@@ -241,22 +241,22 @@ export function Onboarding({ userId, userEmail, onComplete }: OnboardingProps) {
               </select>
             </div>
             <div>
-Sensibilidade Articular (Opcional)
-                {['lesao_joelho', 'lombar', 'lesao_ombro', 'punho'].map((id) => (
-                  <label key={id} className="flex items-center gap-2 p-2.5 border border-slate-200 rounded-xl text-xs">
-                    <input
-                      type="checkbox"
-                      checked={restricoesSaude.includes(id)}
-                      onChange={() => alternarRestricao(id)}
-                      className="accent-emerald-600"
-                    />
-                    <span>{id === 'lesao_joelho' ? 'Joelhos' : id === 'lombar' ? 'Lombar' : id === 'lesao_ombro' ? 'Ombros' : 'Punhos'}</span>
-                  </label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Sensibilidade Articular (Opcional)</label>
+              {['lesao_joelho', 'lombar', 'lesao_ombro', 'punho'].map((id) => (
+                <label key={id} className="flex items-center gap-2 p-2.5 border border-slate-200 rounded-xl text-xs">
+                  <input
+                    type="checkbox"
+                    checked={restricoesSaude.includes(id)}
+                    onChange={() => alternarRestricao(id)}
+                    className="accent-emerald-600"
+                  />
+                  <span>{id === 'lesao_joelho' ? 'Joelhos' : id === 'lombar' ? 'Lombar' : id === 'lesao_ombro' ? 'Ombros' : 'Punhos'}</span>
+                </label>
               ))}
-           </div>
-                   
-         <div className="flex gap-3 mt-6">
+            </div>
 
+            <div className="flex gap-3 mt-6">
+              <button
                 type="button"
                 onClick={() => setStep(2)}
                 className="w-1/3 py-3.5 border border-slate-300 rounded-xl font-medium text-slate-600"
@@ -273,7 +273,7 @@ Sensibilidade Articular (Opcional)
               </button>
             </div>
           </div>
-        )})
+        )}
       </div>
     </div>
   );
