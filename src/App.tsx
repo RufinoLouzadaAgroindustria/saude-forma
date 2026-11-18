@@ -185,6 +185,7 @@ function TelaAutenticacao() {
           password: senha,
         });
         if (error) throw error;
+        window.location.reload();
       }
     } catch (err: any) {
       setMensagem(err.message || 'Erro ao autenticar. Verifique seus dados.');
