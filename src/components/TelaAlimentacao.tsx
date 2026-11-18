@@ -4,8 +4,10 @@ import { ListaComprasModal } from './ListaComprasModal';
 import {
   Alimento,
   calcularSubstituicaoAlimento,
+  MetasCalculadas,
   ResultadoSubstituicao,
 } from '../lib/nutritionEngine';
+import { EstiloCardapio, gerarPlanoInicialUsuario } from '../lib/planGenerator';
 
 interface ItemRefeicaoDetalhado {
   id: string;
@@ -36,6 +38,12 @@ const NOMES_REFEICOES: Record<string, string> = {
 export function TelaAlimentacao({ userId }: TelaAlimentacaoProps) {
   const [refeicoes, setRefeicoes] = useState<RefeicaoComItens[]>([]);
   const [loading, setLoading] = useState(true);
+  const [gerandoCardapio, setGerandoCardapio] = useState(false);
+  const [estiloCardapio, setEstiloCardapio] = useState<EstiloCardapio>('tradicional');
+  const [metasAtivas, setMetasAtivas] = useState<MetasCalculadas | null>(null);
+  const [localTreino, setLocalTreino] = useState<'casa' | 'academia' | 'parque'>('casa');
+  const [restricoesSaude, setRestricoesSaude] = useState<string[]>([]);
+  const [erroGeracao, setErroGeracao] = useState('');
 
   const [modalAberto, setModalAberto] = useState(false);
   const [listaComprasAberta, setListaComprasAberta] = useState(false);
@@ -47,34 +55,79 @@ export function TelaAlimentacao({ userId }: TelaAlimentacaoProps) {
   const [carregandoOpcoes, setCarregandoOpcoes] = useState(false);
 
   useEffect(() => {
-    carregarCardapio();
+    void carregarDados();
   }, [userId]);
 
-  const carregarCardapio = async () => {
+  const carregarDados = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('refeicoes_plano')
-      .select(
-        `
-        id,
-        tipo_refeicao,
-        horario_sugerido,
-        ordem,
-        itens_refeicao (
+    const [resultadoRefeicoes, resultadoUsuario, resultadoMetas] = await Promise.all([
+      supabase
+        .from('refeicoes_plano')
+        .select(`
           id,
-          quantidade_gramas,
-          concluido_hoje,
-          alimentos (*)
-        )
-      `
-      )
-      .eq('usuario_id', userId)
-      .order('ordem', { ascending: true });
+          tipo_refeicao,
+          horario_sugerido,
+          ordem,
+          itens_refeicao (
+            id,
+            quantidade_gramas,
+            concluido_hoje,
+            alimentos (*)
+          )
+        `)
+        .eq('usuario_id', userId)
+        .order('ordem', { ascending: true }),
+      supabase
+        .from('usuarios')
+        .select('local_treino, restricoes_saude')
+        .eq('id', userId)
+        .maybeSingle(),
+      supabase
+        .from('metas_nutricionais')
+        .select('tmb, get, calorias_diarias, proteinas_g, carboidratos_g, gorduras_g, agua_ml')
+        .eq('usuario_id', userId)
+        .eq('ativo', true)
+        .order('data_inicio', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
 
-    if (!error && data) {
-      setRefeicoes(data as unknown as RefeicaoComItens[]);
+    if (!resultadoRefeicoes.error && resultadoRefeicoes.data) {
+      setRefeicoes(resultadoRefeicoes.data as unknown as RefeicaoComItens[]);
+    }
+    if (resultadoUsuario.data) {
+      setLocalTreino(resultadoUsuario.data.local_treino || 'casa');
+      setRestricoesSaude(resultadoUsuario.data.restricoes_saude || []);
+    }
+    if (resultadoMetas.data) {
+      setMetasAtivas(resultadoMetas.data as MetasCalculadas);
     }
     setLoading(false);
+  };
+
+  const gerarNovoCardapio = async () => {
+    if (!metasAtivas) {
+      setErroGeracao('Não encontramos metas nutricionais ativas. Atualize seu perfil e tente novamente.');
+      return;
+    }
+
+    setGerandoCardapio(true);
+    setErroGeracao('');
+    try {
+      await gerarPlanoInicialUsuario(
+        userId,
+        metasAtivas,
+        localTreino,
+        restricoesSaude,
+        estiloCardapio
+      );
+      await carregarDados();
+    } catch (error) {
+      console.error('Erro ao gerar cardápio:', error);
+      setErroGeracao('Não foi possível gerar o cardápio. Tente novamente.');
+    } finally {
+      setGerandoCardapio(false);
+    }
   };
 
   const alternarConclusaoItem = async (
@@ -137,7 +190,7 @@ export function TelaAlimentacao({ userId }: TelaAlimentacaoProps) {
     if (!error) {
       setModalAberto(false);
       setItemSelecionado(null);
-      carregarCardapio();
+      await carregarDados();
     }
   };
 
@@ -177,7 +230,48 @@ export function TelaAlimentacao({ userId }: TelaAlimentacaoProps) {
         </button>
       </header>
 
-      {refeicoes.map((refeicao) => {
+      <section className="rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm space-y-3">
+        <div>
+          <h2 className="font-semibold text-slate-800">Seu cardápio, do seu jeito</h2>
+          <p className="mt-1 text-xs text-slate-500">Escolha um estilo para gerar novas refeições diárias.</p>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {([
+            ['tradicional', 'Tradicional'],
+            ['pratico', 'Prático / Rápido'],
+            ['economico', 'Econômico'],
+          ] as const).map(([valor, rotulo]) => (
+            <button
+              key={valor}
+              type="button"
+              aria-pressed={estiloCardapio === valor}
+              onClick={() => setEstiloCardapio(valor)}
+              className={`rounded-xl border px-2 py-2.5 text-xs font-medium transition-colors ${
+                estiloCardapio === valor
+                  ? 'border-emerald-600 bg-emerald-50 text-emerald-800'
+                  : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-300'
+              }`}
+            >
+              {rotulo}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={gerarNovoCardapio}
+          disabled={gerandoCardapio || !metasAtivas}
+          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {gerandoCardapio ? 'Gerando cardápio...' : 'Gerar Novo Cardápio'}
+        </button>
+        {erroGeracao && <p role="alert" className="text-xs text-rose-600">{erroGeracao}</p>}
+      </section>
+
+      {refeicoes.length === 0 ? (
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">
+          Nenhuma refeição configurada. Escolha um estilo acima para gerar seu cardápio.
+        </div>
+      ) : refeicoes.map((refeicao) => {
         const caloriasRefeicao = refeicao.itens_refeicao.reduce((acc, item) => {
           return (
             acc +
@@ -195,8 +289,7 @@ export function TelaAlimentacao({ userId }: TelaAlimentacaoProps) {
             <div className="bg-slate-50 px-4 py-3 border-b border-slate-100 flex justify-between items-center">
               <div>
                 <h2 className="font-bold text-slate-800">
-                  {NOMES_REFEICOES[refeicao.tipo_refeicao] ||
-                    refeicao.tipo_refeicao}
+                  {NOMES_REFEICOES[refeicao.tipo_refeicao] || refeicao.tipo_refeicao}
                 </h2>
                 {refeicao.horario_sugerido && (
                   <span className="text-xs text-slate-500">
@@ -224,24 +317,13 @@ export function TelaAlimentacao({ userId }: TelaAlimentacaoProps) {
                       <input
                         type="checkbox"
                         checked={item.concluido_hoje}
-                        onChange={() =>
-                          alternarConclusaoItem(item.id, item.concluido_hoje)
-                        }
+                        onChange={() => alternarConclusaoItem(item.id, item.concluido_hoje)}
                         className="mt-1 w-5 h-5 accent-emerald-600 rounded cursor-pointer"
                       />
-                      <div
-                        className={
-                          item.concluido_hoje ? 'opacity-50 line-through' : ''
-                        }
-                      >
-                        <p className="font-semibold text-slate-800 text-sm">
-                          {item.alimentos.nome}
-                        </p>
+                      <div className={item.concluido_hoje ? 'opacity-50 line-through' : ''}>
+                        <p className="font-semibold text-slate-800 text-sm">{item.alimentos.nome}</p>
                         <p className="text-xs text-slate-500 mt-0.5">
-                          {formatarMedidaCaseira(
-                            item.alimentos,
-                            item.quantidade_gramas
-                          )}{' '}
+                          {formatarMedidaCaseira(item.alimentos, item.quantidade_gramas)}{' '}
                           • {kcalItem} kcal
                         </p>
                       </div>
@@ -262,10 +344,7 @@ export function TelaAlimentacao({ userId }: TelaAlimentacaoProps) {
       })}
 
       {listaComprasAberta && (
-        <ListaComprasModal
-          userId={userId}
-          onClose={() => setListaComprasAberta(false)}
-        />
+        <ListaComprasModal userId={userId} onClose={() => setListaComprasAberta(false)} />
       )}
 
       {modalAberto && itemSelecionado && (
@@ -273,53 +352,32 @@ export function TelaAlimentacao({ userId }: TelaAlimentacaoProps) {
           <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl max-h-[85vh] flex flex-col shadow-xl">
             <div className="p-5 border-b border-slate-100 flex justify-between items-center">
               <div>
-                <h3 className="font-bold text-lg text-slate-800">
-                  Substituir Alimento
-                </h3>
+                <h3 className="font-bold text-lg text-slate-800">Substituir Alimento</h3>
                 <p className="text-xs text-slate-500">
-                  Atual: {itemSelecionado.alimentos.nome} (
-                  {itemSelecionado.quantidade_gramas}g)
+                  Atual: {itemSelecionado.alimentos.nome} ({itemSelecionado.quantidade_gramas}g)
                 </p>
               </div>
-              <button
-                onClick={() => setModalAberto(false)}
-                className="p-2 text-slate-400 hover:text-slate-600 font-bold"
-              >
+              <button onClick={() => setModalAberto(false)} className="p-2 text-slate-400 hover:text-slate-600 font-bold">
                 ✕
               </button>
             </div>
 
             <div className="p-4 overflow-y-auto space-y-3 flex-1">
               {carregandoOpcoes ? (
-                <p className="text-center text-sm text-slate-500 py-6">
-                  Calculando porções equivalentes...
-                </p>
+                <p className="text-center text-sm text-slate-500 py-6">Calculando porções equivalentes...</p>
               ) : opcoesSubstituicao.length === 0 ? (
-                <p className="text-center text-sm text-slate-500 py-6">
-                  Nenhuma opção equivalente cadastrada neste grupo.
-                </p>
+                <p className="text-center text-sm text-slate-500 py-6">Nenhuma opção equivalente cadastrada neste grupo.</p>
               ) : (
                 opcoesSubstituicao.map((opcao) => (
-                  <div
-                    key={opcao.alimento_substituto.id}
-                    className="border border-slate-200 rounded-xl p-3.5 flex justify-between items-center gap-3 hover:border-emerald-400 transition-colors"
-                  >
+                  <div key={opcao.alimento_substituto.id} className="border border-slate-200 rounded-xl p-3.5 flex justify-between items-center gap-3 hover:border-emerald-400 transition-colors">
                     <div>
-                      <p className="font-semibold text-slate-800 text-sm">
-                        {opcao.alimento_substituto.nome}
-                      </p>
+                      <p className="font-semibold text-slate-800 text-sm">{opcao.alimento_substituto.nome}</p>
                       <p className="text-xs font-bold text-emerald-700 mt-0.5">
-                        {opcao.medida_caseira_equivalente} (
-                        {opcao.nova_quantidade_gramas}g)
+                        {opcao.medida_caseira_equivalente} ({opcao.nova_quantidade_gramas}g)
                       </p>
-                      <p className="text-[11px] text-slate-400 mt-0.5">
-                        Aprox. {opcao.calorias_resultantes} kcal
-                      </p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">Aprox. {opcao.calorias_resultantes} kcal</p>
                     </div>
-                    <button
-                      onClick={() => confirmarSubstituicao(opcao)}
-                      className="bg-emerald-600 text-white text-xs font-semibold px-3.5 py-2.5 rounded-xl hover:bg-emerald-700 shrink-0"
-                    >
+                    <button onClick={() => confirmarSubstituicao(opcao)} className="bg-emerald-600 text-white text-xs font-semibold px-3.5 py-2.5 rounded-xl hover:bg-emerald-700 shrink-0">
                       Selecionar
                     </button>
                   </div>
