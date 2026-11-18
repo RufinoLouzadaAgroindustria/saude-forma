@@ -252,9 +252,11 @@ Sensibilidade Articular (Opcional)
                     />
                     <span>{id === 'lesao_joelho' ? 'Joelhos' : id === 'lombar' ? 'Lombar' : id === 'lesao_ombro' ? 'Ombros' : 'Punhos'}</span>
                   </label>
-                ))}
-              <div className="flex gap-3 mt-6">
-              <button
+              ))}
+           </div>
+         </div>
+         <div className="flex gap-3 mt-6">
+
                 type="button"
                 onClick={() => setStep(2)}
                 className="w-1/3 py-3.5 border border-slate-300 rounded-xl font-medium text-slate-600"
