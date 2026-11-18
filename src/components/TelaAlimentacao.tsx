@@ -235,11 +235,12 @@ export function TelaAlimentacao({ userId }: TelaAlimentacaoProps) {
           <h2 className="font-semibold text-slate-800">Seu cardápio, do seu jeito</h2>
           <p className="mt-1 text-xs text-slate-500">Escolha um estilo para gerar novas refeições diárias.</p>
         </div>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid-cols-2 sm:grid-cols-4">
           {([
             ['tradicional', 'Tradicional'],
             ['pratico', 'Prático / Rápido'],
             ['economico', 'Econômico'],
+            ['vegano', 'Vegano'],
           ] as const).map(([valor, rotulo]) => (
             <button
               key={valor}
