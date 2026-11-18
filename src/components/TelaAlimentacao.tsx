@@ -296,19 +296,21 @@ export function TelaAlimentacao({ userId }: TelaAlimentacaoProps) {
                       </p>
                       <p className="text-[11px] text-slate-400 mt-0.5">
                         Aprox. {opcao.calorias_resultantes} kcal
-<button
-onClick={() => confirmarSubstituicao(opcao)}
-className="bg-emerald-600 text-white text-xs font-semibold px-3.5 py-2.5 rounded-xl hover:bg-emerald-700 shrink-0"
->
-Selecionar
-
-
-))
-)}
-
-
-
-)}
-
-);
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => confirmarSubstituicao(opcao)}
+                      className="bg-emerald-600 text-white text-xs font-semibold px-3.5 py-2.5 rounded-xl hover:bg-emerald-700 shrink-0"
+                    >
+                      Selecionar
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
