@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { ListaComprasModal } from './ListaComprasModal';
 import {
   Alimento,
   calcularSubstituicaoAlimento,
@@ -37,6 +38,7 @@ export function TelaAlimentacao({ userId }: TelaAlimentacaoProps) {
   const [loading, setLoading] = useState(true);
 
   const [modalAberto, setModalAberto] = useState(false);
+  const [listaComprasAberta, setListaComprasAberta] = useState(false);
   const [itemSelecionado, setItemSelecionado] =
     useState<ItemRefeicaoDetalhado | null>(null);
   const [opcoesSubstituicao, setOpcoesSubstituicao] = useState<
@@ -159,11 +161,20 @@ export function TelaAlimentacao({ userId }: TelaAlimentacaoProps) {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-24 max-w-md mx-auto p-4 space-y-4">
-      <header className="pt-2">
-        <h1 className="text-2xl font-bold text-slate-800">Alimentação</h1>
-        <p className="text-sm text-slate-500">
-          Marque o que já consumiu ou toque em trocar para adaptar
-        </p>
+      <header className="flex items-start justify-between gap-3 pt-2">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">Alimentação</h1>
+          <p className="text-sm text-slate-500">
+            Marque o que já consumiu ou toque em trocar para adaptar
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setListaComprasAberta(true)}
+          className="shrink-0 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
+        >
+          Lista de Compras
+        </button>
       </header>
 
       {refeicoes.map((refeicao) => {
@@ -249,6 +260,13 @@ export function TelaAlimentacao({ userId }: TelaAlimentacaoProps) {
           </section>
         );
       })}
+
+      {listaComprasAberta && (
+        <ListaComprasModal
+          userId={userId}
+          onClose={() => setListaComprasAberta(false)}
+        />
+      )}
 
       {modalAberto && itemSelecionado && (
         <div className="fixed inset-0 bg-slate-900/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
