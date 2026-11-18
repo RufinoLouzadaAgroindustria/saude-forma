@@ -254,7 +254,7 @@ Sensibilidade Articular (Opcional)
                   </label>
               ))}
            </div>
-         </div>
+                   
          <div className="flex gap-3 mt-6">
 
                 type="button"
