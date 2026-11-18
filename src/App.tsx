@@ -4,8 +4,32 @@ import { Onboarding } from './components/Onboarding';
 import { DashboardHoje } from './components/DashboardHoje';
 import { TelaAlimentacao } from './components/TelaAlimentacao';
 import { TelaTreinos } from './components/TelaTreinos';
+import {
+  calcularMetasNutricionais,
+  PerfilUsuario,
+} from './lib/nutritionEngine';
 
 type AbaAtiva = 'hoje' | 'alimentacao' | 'treinos' | 'evolucao';
+type ObjetivoUsuario = 'perda_peso' | 'recomposicao' | 'manutencao';
+type SexoBiologico = 'masculino' | 'feminino';
+
+interface PerfilEditavel {
+  peso_inicial_kg: string;
+  altura_cm: string;
+  nivel_atividade: string;
+  objetivo: ObjetivoUsuario;
+  sexo_biologico: SexoBiologico;
+  data_nascimento: string;
+}
+
+const PERFIL_VAZIO: PerfilEditavel = {
+  peso_inicial_kg: '',
+  altura_cm: '',
+  nivel_atividade: '1.375',
+  objetivo: 'perda_peso',
+  sexo_biologico: 'feminino',
+  data_nascimento: '',
+};
 
 export function App() {
   const [session, setSession] = useState<any>(null);
@@ -260,6 +284,11 @@ function TelaEvolucao({ userId }: { userId: string }) {
   const [cinturaAtual, setCinturaAtual] = useState('');
   const [historico, setHistorico] = useState<any[]>([]);
   const [salvando, setSalvando] = useState(false);
+  const [perfilAberto, setPerfilAberto] = useState(false);
+  const [perfil, setPerfil] = useState<PerfilEditavel>(PERFIL_VAZIO);
+  const [carregandoPerfil, setCarregandoPerfil] = useState(false);
+  const [salvandoPerfil, setSalvandoPerfil] = useState(false);
+  const [erroPerfil, setErroPerfil] = useState('');
 
   useEffect(() => {
     carregarHistorico();
@@ -277,7 +306,39 @@ function TelaEvolucao({ userId }: { userId: string }) {
     if (data) setHistorico(data);
   };
 
-   const registrarPesagem = async (e: React.FormEvent) => {
+  const carregarPerfil = async () => {
+    setCarregandoPerfil(true);
+    setErroPerfil('');
+    const { data, error } = await supabase
+      .from('usuarios')
+      .select('peso_inicial_kg, altura_cm, nivel_atividade, objetivo, sexo_biologico, data_nascimento')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (error || !data) {
+      setErroPerfil('Não foi possível carregar seus dados de perfil.');
+      setCarregandoPerfil(false);
+      return;
+    }
+
+    setPerfil({
+      peso_inicial_kg: String(data.peso_inicial_kg ?? ''),
+      altura_cm: String(data.altura_cm ?? ''),
+      nivel_atividade: String(data.nivel_atividade ?? 1.375),
+      objetivo: data.objetivo ?? 'perda_peso',
+      sexo_biologico: data.sexo_biologico ?? 'feminino',
+      data_nascimento: data.data_nascimento ?? '',
+    });
+    setCarregandoPerfil(false);
+  };
+
+  const alternarEdicaoPerfil = () => {
+    const vaiAbrir = !perfilAberto;
+    setPerfilAberto(vaiAbrir);
+    if (vaiAbrir) carregarPerfil();
+  };
+
+  const registrarPesagem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pesoAtual) return;
 
@@ -300,6 +361,85 @@ function TelaEvolucao({ userId }: { userId: string }) {
     carregarHistorico();
   };
 
+  const salvarPerfilERecalcular = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSalvandoPerfil(true);
+    setErroPerfil('');
+
+    try {
+      const pesoKg = Number(perfil.peso_inicial_kg);
+      const alturaCm = Number(perfil.altura_cm);
+      const nivelAtividade = Number(perfil.nivel_atividade);
+      const dataNascimento = new Date(`${perfil.data_nascimento}T12:00:00`);
+      if (
+        !Number.isFinite(pesoKg) || pesoKg <= 0 ||
+        !Number.isFinite(alturaCm) || alturaCm <= 0 ||
+        !Number.isFinite(nivelAtividade) || nivelAtividade <= 0 ||
+        !perfil.data_nascimento || Number.isNaN(dataNascimento.getTime())
+      ) {
+        throw new Error('Preencha todos os dados com valores válidos.');
+      }
+
+      const hoje = new Date();
+      let idade = hoje.getFullYear() - dataNascimento.getFullYear();
+      const diferencaMes = hoje.getMonth() - dataNascimento.getMonth();
+      if (diferencaMes < 0 || (diferencaMes === 0 && hoje.getDate() < dataNascimento.getDate())) {
+        idade -= 1;
+      }
+      idade = Math.max(14, idade);
+
+      const perfilCalc: PerfilUsuario = {
+        peso_kg: pesoKg,
+        altura_cm: alturaCm,
+        nivel_atividade: nivelAtividade,
+        objetivo: perfil.objetivo,
+        sexo_biologico: perfil.sexo_biologico,
+        idade,
+      };
+      const metas = calcularMetasNutricionais(perfilCalc);
+
+      const { error: erroAtualizacao } = await supabase
+        .from('usuarios')
+        .update({
+          peso_inicial_kg: pesoKg,
+          altura_cm: alturaCm,
+          nivel_atividade: nivelAtividade,
+          objetivo: perfil.objetivo,
+          sexo_biologico: perfil.sexo_biologico,
+          data_nascimento: perfil.data_nascimento,
+        })
+        .eq('id', userId);
+      if (erroAtualizacao) throw erroAtualizacao;
+
+      const { error: erroDesativacao } = await supabase
+        .from('metas_nutricionais')
+        .update({ ativo: false })
+        .eq('usuario_id', userId)
+        .eq('ativo', true);
+      if (erroDesativacao) throw erroDesativacao;
+
+      const { error: erroNovaMeta } = await supabase
+        .from('metas_nutricionais')
+        .insert({
+          usuario_id: userId,
+          calorias_diarias: metas.calorias_diarias,
+          proteinas_g: metas.proteinas_g,
+          carboidratos_g: metas.carboidratos_g,
+          gorduras_g: metas.gorduras_g,
+          agua_ml: metas.agua_ml,
+          ativo: true,
+        });
+      if (erroNovaMeta) throw erroNovaMeta;
+
+      alert('Perfil atualizado e metas recalculadas com sucesso.');
+      setPerfilAberto(false);
+    } catch (error: any) {
+      setErroPerfil(error.message || 'Não foi possível atualizar o perfil e as metas.');
+    } finally {
+      setSalvandoPerfil(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 pb-24 max-w-md mx-auto p-4 space-y-4">
       <header className="pt-2 flex justify-between items-center">
@@ -308,7 +448,11 @@ function TelaEvolucao({ userId }: { userId: string }) {
           <p className="text-sm text-slate-500">Acompanhe medidas e constância</p>
         </div>
         <button
-          onClick={() => supabase.auth.signOut()}
+          onClick={async () => {
+            await supabase.auth.signOut();
+            localStorage.clear();
+            window.location.href = '/';
+          }}
           className="text-xs font-semibold text-slate-500 bg-white border border-slate-200 px-3 py-2 rounded-xl hover:bg-slate-100"
         >
           Sair
@@ -355,6 +499,69 @@ function TelaEvolucao({ userId }: { userId: string }) {
           {salvando ? 'Salvando...' : 'Salvar Registro'}
         </button>
       </form>
+
+      <section className="bg-white rounded-2xl shadow-sm border border-slate-200">
+        <button
+          type="button"
+          aria-expanded={perfilAberto}
+          onClick={alternarEdicaoPerfil}
+          className="flex w-full items-center justify-between p-5 text-left"
+        >
+          <span className="font-semibold text-slate-800">Editar Meu Perfil e Recalcular Metas</span>
+          <span className="text-emerald-700" aria-hidden="true">{perfilAberto ? '−' : '+'}</span>
+        </button>
+
+        {perfilAberto && (
+          <div className="border-t border-slate-100 p-5">
+            {carregandoPerfil ? (
+              <p className="text-center text-sm text-slate-500">Carregando seu perfil...</p>
+            ) : (
+              <form onSubmit={salvarPerfilERecalcular} className="space-y-3">
+                {erroPerfil && <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{erroPerfil}</p>}
+                <div>
+                  <label className="mb-1 block text-xs text-slate-500">Peso atual (kg)</label>
+                  <input type="number" min="1" step="0.1" required value={perfil.peso_inicial_kg} onChange={(e) => setPerfil({ ...perfil, peso_inicial_kg: e.target.value })} className="w-full rounded-xl border border-slate-300 p-2.5 text-sm" />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs text-slate-500">Altura (cm)</label>
+                  <input type="number" min="1" step="1" required value={perfil.altura_cm} onChange={(e) => setPerfil({ ...perfil, altura_cm: e.target.value })} className="w-full rounded-xl border border-slate-300 p-2.5 text-sm" />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs text-slate-500">Data de nascimento</label>
+                  <input type="date" required value={perfil.data_nascimento} onChange={(e) => setPerfil({ ...perfil, data_nascimento: e.target.value })} className="w-full rounded-xl border border-slate-300 p-2.5 text-sm" />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs text-slate-500">Sexo biológico</label>
+                  <select value={perfil.sexo_biologico} onChange={(e) => setPerfil({ ...perfil, sexo_biologico: e.target.value as SexoBiologico })} className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-sm">
+                    <option value="feminino">Feminino</option>
+                    <option value="masculino">Masculino</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs text-slate-500">Nível de atividade</label>
+                  <select value={perfil.nivel_atividade} onChange={(e) => setPerfil({ ...perfil, nivel_atividade: e.target.value })} className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-sm">
+                    <option value="1.2">Sedentário</option>
+                    <option value="1.375">Levemente ativo</option>
+                    <option value="1.55">Moderadamente ativo</option>
+                    <option value="1.725">Muito ativo</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs text-slate-500">Objetivo</label>
+                  <select value={perfil.objetivo} onChange={(e) => setPerfil({ ...perfil, objetivo: e.target.value as ObjetivoUsuario })} className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-sm">
+                    <option value="perda_peso">Perder peso</option>
+                    <option value="recomposicao">Recomposição corporal</option>
+                    <option value="manutencao">Manutenção</option>
+                  </select>
+                </div>
+                <button type="submit" disabled={salvandoPerfil || carregandoPerfil} className="w-full rounded-xl bg-emerald-600 py-3 font-semibold text-white hover:bg-emerald-700 disabled:opacity-50">
+                  {salvandoPerfil ? 'Salvando e recalculando...' : 'Salvar e Recalcular Metas'}
+                </button>
+              </form>
+            )}
+          </div>
+        )}
+      </section>
 
       <section className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3">
         <h2 className="font-semibold text-slate-800">Histórico Recente</h2>

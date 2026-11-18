@@ -56,8 +56,8 @@ export function DashboardHoje({ userId }: DashboardProps) {
     }
   };
 
-  const adicionarAgua = async (ml: number) => {
-    const novoTotal = aguaHoje + ml;
+  const ajustarAgua = async (variacaoMl: number) => {
+    const novoTotal = Math.max(0, aguaHoje + variacaoMl);
     setAguaHoje(novoTotal);
 
     await supabase.from('logs_evolucao').upsert(
@@ -91,6 +91,7 @@ export function DashboardHoje({ userId }: DashboardProps) {
   }
 
   const percentualAgua = Math.min(100, Math.round((aguaHoje / metas.agua_ml) * 100));
+  const faltaBeber = Math.max(0, metas.agua_ml - aguaHoje);
 
   return (
     <div className="min-h-screen bg-slate-50 pb-24 max-w-md mx-auto p-4 space-y-4">
@@ -127,8 +128,14 @@ export function DashboardHoje({ userId }: DashboardProps) {
         <div className="flex justify-between items-center mb-2">
           <h2 className="font-semibold text-slate-800">Hidratação</h2>
           <span className="text-sm font-medium text-blue-600">
-            {aguaHoje} / {metas.agua_ml} ml
+            {percentualAgua}% da meta
           </span>
+        </div>
+
+        <div className="mb-4 space-y-1.5 text-sm">
+          <p className="text-slate-700">Ingerido hoje: <strong>{aguaHoje} ml</strong></p>
+          <p className="text-slate-700">Meta do dia: <strong>{metas.agua_ml} ml</strong></p>
+          <p className="text-blue-700">Falta beber: <strong>{faltaBeber} ml</strong></p>
         </div>
 
         <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden mb-4">
@@ -138,16 +145,22 @@ export function DashboardHoje({ userId }: DashboardProps) {
           />
         </div>
 
-        <div className="flex gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <button
-            onClick={() => adicionarAgua(250)}
-            className="flex-1 py-2.5 bg-blue-50 text-blue-700 font-semibold rounded-xl hover:bg-blue-100 text-sm"
+            onClick={() => ajustarAgua(-250)}
+            className="py-2.5 bg-slate-100 text-slate-700 font-semibold rounded-xl hover:bg-slate-200 text-xs"
+          >
+            - 250 ml (Corrigir)
+          </button>
+          <button
+            onClick={() => ajustarAgua(250)}
+            className="py-2.5 bg-blue-50 text-blue-700 font-semibold rounded-xl hover:bg-blue-100 text-xs"
           >
             + 250 ml (Copo)
           </button>
           <button
-            onClick={() => adicionarAgua(500)}
-            className="flex-1 py-2.5 bg-blue-50 text-blue-700 font-semibold rounded-xl hover:bg-blue-100 text-sm"
+            onClick={() => ajustarAgua(500)}
+            className="py-2.5 bg-blue-50 text-blue-700 font-semibold rounded-xl hover:bg-blue-100 text-xs"
           >
             + 500 ml (Garrafa)
           </button>
