@@ -163,6 +163,7 @@ function TelaAutenticacao() {
   const [modoCadastro, setModoCadastro] = useState(false);
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [manterConectado, setManterConectado] = useState(true);
   const [loading, setLoading] = useState(false);
   const [mensagem, setMensagem] = useState('');
 
@@ -185,6 +186,10 @@ function TelaAutenticacao() {
           password: senha,
         });
         if (error) throw error;
+        localStorage.setItem(
+          'saude_forma_manter_conectado',
+          String(manterConectado)
+        );
         window.location.reload();
       }
     } catch (err: any) {
@@ -237,6 +242,18 @@ function TelaAutenticacao() {
               className="w-full p-3 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500"
             />
           </div>
+
+          {!modoCadastro && (
+            <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={manterConectado}
+                onChange={(e) => setManterConectado(e.target.checked)}
+                className="w-4 h-4 accent-emerald-600 rounded"
+              />
+              <span>Manter-me conectado ao longo do dia</span>
+            </label>
+          )}
 
           {mensagem && (
             <p className="text-xs text-emerald-900 bg-emerald-50 p-3 rounded-xl border border-emerald-200">
