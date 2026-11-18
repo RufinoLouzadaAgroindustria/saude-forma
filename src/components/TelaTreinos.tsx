@@ -273,7 +273,7 @@ export function TelaTreinos({ userId }: TelaTreinosProps) {
                   Pular
                 </button>
               </div>
-            </div>
+           </div>
           ) : (
             <button
               onClick={concluirSerie}
