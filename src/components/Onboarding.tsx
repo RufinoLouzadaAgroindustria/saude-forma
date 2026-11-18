@@ -271,7 +271,7 @@ Sensibilidade Articular (Opcional)
               </button>
             </div>
           </div>
-        )}
+        )})
       </div>
     </div>
   );
