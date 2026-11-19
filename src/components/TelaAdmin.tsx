@@ -553,7 +553,6 @@ export function TelaAdmin() {
               {salvando ? 'Publicando...' : 'Publicar Anúncio'}
             </button>
           </form>
-
           <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-3">
             <h2 className="font-semibold text-sm text-slate-800">
               Campanhas Cadastradas ({anuncios.length})
