@@ -1,219 +1,213 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { BannerAnuncio } from './BannerAnuncio';
 
-interface AlimentoLista {
-  id: number;
+interface ItemConsolidado {
+  alimento_id: number;
   nome: string;
-  grupo_alimentar: string;
-}
-
-interface ItemListaCompras {
-  quantidade_gramas: number;
-  alimentos: AlimentoLista | AlimentoLista[] | null;
-}
-
-interface RefeicaoListaCompras {
-  itens_refeicao: ItemListaCompras[];
-}
-
-interface AlimentoAgregado {
-  id: number;
-  nome: string;
-  quantidadeGramas: number;
-  corredor: string;
+  setor: string;
+  total_gramas_semana: number;
+  comprado: boolean;
 }
 
 interface ListaComprasModalProps {
   userId: string;
-  onClose: () => void;
+  aberto: boolean;
+  onFechar: () => void;
 }
 
-const CORREDORES = [
-  'Hortifrúti e Folhosos',
-  'Açougue',
-  'Peixaria e Laticínios',
-  'Mercearia e Grãos',
-] as const;
+const MAPA_SETORES: Record<string, string> = {
+  vegetal: 'Hortifrúti e Folhosos',
+  fruta: 'Hortifrúti e Folhosos',
+  proteina: 'Açougue, Peixaria e Laticínios',
+  carboidrato: 'Mercearia, Grãos e Padaria',
+  gordura: 'Mercearia e Oleaginosas',
+};
 
-function identificarCorredor(alimento: AlimentoLista): string {
-  const texto = `${alimento.nome} ${alimento.grupo_alimentar}`
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
-
-  if (/peix|pescad|salmao|tilapia|atum|sardinha|fruto do mar|latic|leite|queijo|iogurte|requeij|coalhada/.test(texto)) {
-    return 'Peixaria e Laticínios';
-  }
-  if (/acougue|carne|bovino|suino|porco|frango|ave|peru|linguica/.test(texto)) {
-    return 'Açougue';
-  }
-  if (/horti|folhos|fruta|verdura|legume|vegetal|hortal|salada|folha|banana|maca|tomate|alface|brocolis|cenoura|batata|cebola|alho/.test(texto)) {
-    return 'Hortifrúti e Folhosos';
-  }
-  return 'Mercearia e Grãos';
-}
-
-export function ListaComprasModal({ userId, onClose }: ListaComprasModalProps) {
-  const [alimentos, setAlimentos] = useState<AlimentoAgregado[]>([]);
-  const [itensMarcados, setItensMarcados] = useState<Set<number>>(new Set());
+export function ListaComprasModal({
+  userId,
+  aberto,
+  onFechar,
+}: ListaComprasModalProps) {
+  const [itens, setItens] = useState<ItemConsolidado[]>([]);
   const [loading, setLoading] = useState(true);
-  const [erro, setErro] = useState('');
+  const [copiado, setCopiado] = useState(false);
 
   useEffect(() => {
-    let cancelado = false;
+    if (aberto) {
+      gerarListaSemanal();
+      setCopiado(false);
+    }
+  }, [aberto, userId]);
 
-    const carregarLista = async () => {
-      setLoading(true);
-      setErro('');
+  const gerarListaSemanal = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('refeicoes_plano')
+      .select(
+        'itens_refeicao ( quantidade_gramas, alimentos ( id, nome, grupo_alimentar ) )'
+      )
+      .eq('usuario_id', userId);
 
-      const { data, error } = await supabase
-        .from('refeicoes_plano')
-        .select(
-          `
-          itens_refeicao (
-            quantidade_gramas,
-            alimentos (*)
-          )
-        `
-        )
-        .eq('usuario_id', userId);
+    if (!error && data) {
+      const mapaAgrupado = new Map<number, ItemConsolidado>();
 
-      if (cancelado) return;
-
-      if (error) {
-        setErro('Não foi possível carregar sua lista de compras. Tente novamente.');
-        setLoading(false);
-        return;
-      }
-
-      const totais = new Map<number, AlimentoAgregado>();
-      (data as unknown as RefeicaoListaCompras[] | null)?.forEach((refeicao) => {
-        refeicao.itens_refeicao?.forEach((item) => {
-          const alimento = Array.isArray(item.alimentos)
-            ? item.alimentos[0]
-            : item.alimentos;
+      data.forEach((refeicao: any) => {
+        refeicao.itens_refeicao?.forEach((item: any) => {
+          const alimento = item.alimentos;
           if (!alimento) return;
 
-          const quantidadeSemanal = Number(item.quantidade_gramas) * 7;
-          const existente = totais.get(alimento.id);
+          const gramasSemanais = Math.round(item.quantidade_gramas * 7);
+          const existente = mapaAgrupado.get(alimento.id);
+
           if (existente) {
-            existente.quantidadeGramas += quantidadeSemanal;
+            existente.total_gramas_semana += gramasSemanais;
           } else {
-            totais.set(alimento.id, {
-              id: alimento.id,
+            mapaAgrupado.set(alimento.id, {
+              alimento_id: alimento.id,
               nome: alimento.nome,
-              quantidadeGramas: quantidadeSemanal,
-              corredor: identificarCorredor(alimento),
+              setor: MAPA_SETORES[alimento.grupo_alimentar] || 'Outros Itens',
+              total_gramas_semana: gramasSemanais,
+              comprado: false,
             });
           }
         });
       });
 
-      setAlimentos(
-        Array.from(totais.values()).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+      const listaOrdenada = Array.from(mapaAgrupado.values()).sort((a, b) =>
+        a.setor.localeCompare(b.setor)
       );
-      setLoading(false);
-    };
-
-    carregarLista();
-    return () => {
-      cancelado = true;
-    };
-  }, [userId]);
-
-  const alimentosPorCorredor = useMemo(
-    () =>
-      CORREDORES.map((corredor) => ({
-        corredor,
-        alimentos: alimentos.filter((alimento) => alimento.corredor === corredor),
-      })).filter((grupo) => grupo.alimentos.length > 0),
-    [alimentos]
-  );
-
-  const alternarMarcacao = (id: number) => {
-    setItensMarcados((atuais) => {
-      const novos = new Set(atuais);
-      if (novos.has(id)) novos.delete(id);
-      else novos.add(id);
-      return novos;
-    });
+      setItens(listaOrdenada);
+    }
+    setLoading(false);
   };
 
+  const alternarItemComprado = (alimentoId: number) => {
+    setItens((prev) =>
+      prev.map((item) =>
+        item.alimento_id === alimentoId
+          ? { ...item, comprado: !item.comprado }
+          : item
+      )
+    );
+  };
+
+  const formatarPesoMercado = (gramas: number) => {
+    if (gramas >= 1000) {
+      return (gramas / 1000).toFixed(2).replace('.', ',') + ' kg';
+    }
+    return gramas + ' g';
+  };
+
+  const copiarListaTexto = () => {
+    const pendentes = itens.filter((i) => !i.comprado);
+    if (pendentes.length === 0) return;
+
+    const linhas = pendentes.map(
+      (i) => `- ${i.nome}: ${formatarPesoMercado(i.total_gramas_semana)}`
+    );
+    const textoCompleto =
+      'Lista de Compras da Semana (Saúde & Forma):\n\n' + linhas.join('\n');
+
+    navigator.clipboard.writeText(textoCompleto);
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 3000);
+  };
+
+  if (!aberto) return null;
+
+  const setores = Array.from(new Set(itens.map((i) => i.setor)));
+
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-0 sm:items-center sm:p-4"
-      role="presentation"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="lista-compras-titulo"
-        className="flex max-h-[85vh] w-full max-w-md flex-col rounded-t-3xl bg-white shadow-xl sm:rounded-2xl"
-      >
-        <header className="flex items-center justify-between border-b border-slate-100 p-5">
+    <div className="fixed inset-0 bg-slate-900/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl max-h-[85vh] flex flex-col shadow-xl">
+        <div className="p-5 border-b border-slate-100 flex justify-between items-center">
           <div>
-            <h2 id="lista-compras-titulo" className="text-lg font-bold text-slate-800">
-              Lista de Compras
-            </h2>
-            <p className="text-xs text-slate-500">Quantidades para 7 dias</p>
+            <h3 className="font-bold text-lg text-slate-800">
+              Lista de Compras (7 Dias)
+            </h3>
+            <p className="text-xs text-slate-500">
+              Quantidades somadas do seu cardápio atual
+            </p>
           </div>
           <button
-            type="button"
-            onClick={onClose}
-            aria-label="Fechar lista de compras"
-            className="rounded-lg p-2 font-bold text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            onClick={onFechar}
+            className="p-2 text-slate-400 hover:text-slate-600 font-bold"
           >
             ✕
           </button>
-        </header>
+        </div>
 
-        <div className="flex-1 space-y-5 overflow-y-auto p-4">
+        <div className="p-4 overflow-y-auto space-y-5 flex-1">
+          <BannerAnuncio local="lista_compras" />
+
           {loading ? (
-            <p className="py-8 text-center text-sm text-slate-500">
-              Preparando sua lista de compras...
+            <p className="text-center text-sm text-slate-500 py-8">
+              Calculando quantidades da semana...
             </p>
-          ) : erro ? (
-            <p role="alert" className="py-8 text-center text-sm text-rose-600">
-              {erro}
-            </p>
-          ) : alimentos.length === 0 ? (
-            <p className="py-8 text-center text-sm text-slate-500">
-              Nenhum alimento encontrado no seu plano alimentar.
+          ) : itens.length === 0 ? (
+            <p className="text-center text-sm text-slate-500 py-8">
+              Nenhum alimento encontrado no seu cardápio.
             </p>
           ) : (
-            alimentosPorCorredor.map(({ corredor, alimentos: itens }) => (
-              <section key={corredor}>
-                <h3 className="mb-2 text-sm font-bold text-emerald-800">{corredor}</h3>
-                <ul className="divide-y divide-slate-100 rounded-xl border border-slate-100">
-                  {itens.map((alimento) => {
-                    const marcado = itensMarcados.has(alimento.id);
-                    return (
-                      <li key={alimento.id} className="flex items-center gap-3 p-3">
-                        <input
-                          type="checkbox"
-                          checked={marcado}
-                          onChange={() => alternarMarcacao(alimento.id)}
-                          aria-label={`Marcar ${alimento.nome} como comprado`}
-                          className="h-5 w-5 accent-emerald-600"
-                        />
-                        <span className={`flex-1 text-sm ${marcado ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
-                          {alimento.nome}
+            setores.map((setor) => (
+              <div key={setor} className="space-y-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg">
+                  {setor}
+                </h4>
+                <div className="divide-y divide-slate-100 border border-slate-100 rounded-xl px-3">
+                  {itens
+                    .filter((i) => i.setor === setor)
+                    .map((item) => (
+                      <label
+                        key={item.alimento_id}
+                        className="py-3 flex items-center justify-between gap-3 cursor-pointer"
+                      >
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            checked={item.comprado}
+                            onChange={() =>
+                              alternarItemComprado(item.alimento_id)
+                            }
+                            className="w-5 h-5 accent-emerald-600 rounded"
+                          />
+                          <span
+                            className={
+                              'text-sm font-medium ' +
+                              (item.comprado
+                                ? 'line-through text-slate-400'
+                                : 'text-slate-800')
+                            }
+                          >
+                            {item.nome}
+                          </span>
+                        </div>
+                        <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg shrink-0">
+                          {formatarPesoMercado(item.total_gramas_semana)}
                         </span>
-                        <span className="text-xs font-semibold text-slate-500">
-                          {Math.round(alimento.quantidadeGramas)} g
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </section>
+                      </label>
+                    ))}
+                </div>
+              </div>
             ))
           )}
         </div>
-      </section>
+
+        {itens.length > 0 && (
+          <div className="p-4 border-t border-slate-100 bg-slate-50 rounded-b-2xl">
+            <button
+              type="button"
+              onClick={copiarListaTexto}
+              className="w-full py-3 bg-emerald-600 text-white font-semibold rounded-xl text-sm hover:bg-emerald-700 transition-colors"
+            >
+              {copiado
+                ? 'Lista copiada! Cole no seu WhatsApp'
+                : 'Copiar Lista para o WhatsApp'}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
