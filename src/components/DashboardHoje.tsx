@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { BannerAnuncio } from './BannerAnuncio';
 
 interface DashboardProps {
   userId: string;
@@ -190,7 +191,8 @@ export function DashboardHoje({ userId }: DashboardProps) {
         >
           {treinoConcluido ? 'Treino Concluído Hoje' : 'Marcar Treino como Concluído'}
         </button>
-      </section>
+      </section>0
+<BannerAnuncio local="dashboard" />
     </div>
   );
 }
