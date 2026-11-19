@@ -1,3 +1,4 @@
+import { BannerAnuncio } from './BannerAnuncio';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { ListaComprasModal } from './ListaComprasModal';
@@ -343,7 +344,7 @@ export function TelaAlimentacao({ userId }: TelaAlimentacaoProps) {
           </section>
         );
       })}
-
+<BannerAnuncio local="alimentacao" />
       {listaComprasAberta && (
         <ListaComprasModal userId={userId} onClose={() => setListaComprasAberta(false)} />
       )}
