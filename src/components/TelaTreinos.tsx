@@ -1,3 +1,4 @@
+import { BannerAnuncio } from './BannerAnuncio';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
@@ -83,6 +84,7 @@ export function TelaTreinos({ userId }: TelaTreinosProps) {
           {tempoRestante !== null ? <div className="flex items-center justify-between rounded-xl border border-blue-200 bg-blue-50 p-4"><div><p className="text-xs font-semibold text-blue-700">Tempo de Descanso</p><p className="text-2xl font-bold text-blue-900">{formatarTempo(tempoRestante)}</p></div><div className="flex gap-2"><button onClick={() => setCronometroAtivo(!cronometroAtivo)} className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white">{cronometroAtivo ? 'Pausar' : 'Retomar'}</button><button onClick={() => { setCronometroAtivo(false); setTempoRestante(null); }} className="rounded-lg border border-blue-200 bg-white px-3 py-2 text-xs font-semibold text-blue-700">Pular</button></div></div> : <button onClick={concluirSerie} className="w-full rounded-xl bg-emerald-600 py-4 font-bold text-white shadow-sm transition-colors hover:bg-emerald-700">Concluir Série {serieAtual}</button>}
         </div>
       </section>
+<BannerAnuncio local="treinos" />
     </div>
   );
 }
