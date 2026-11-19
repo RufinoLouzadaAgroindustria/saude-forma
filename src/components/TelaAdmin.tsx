@@ -556,7 +556,7 @@ export function TelaAdmin() {
               <div className="divide-y divide-slate-100">
                 {anuncios.map((ad) => (
 <span
-className={inline-block text-[10px] font-bold uppercase px-2 py-0.5 rounded-md mr-2 ${ ad.ativo ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500' }}
+className={'inline-block text-[10px] font-bold uppercase px-2 py-0.5 rounded-md mr-2 ' + (ad.ativo ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500')}
 >
 {ad.ativo ? 'Ativo' : 'Pausado'}
 
