@@ -20,7 +20,7 @@ export function BannerAnuncio({ local }: { local: LocalAnuncio }) {
   }, [local]);
 
   const carregarAnuncio = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('anuncios')
       .select('id, titulo, descricao, texto_botao, link_destino, imagem_url')
       .eq('local_exibicao', local)
@@ -29,7 +29,9 @@ export function BannerAnuncio({ local }: { local: LocalAnuncio }) {
       .limit(1)
       .maybeSingle();
 
-    if (data) setAnuncio(data);
+    if (!error && data) {
+      setAnuncio(data);
+    }
   };
 
   const handleClique = async () => {
@@ -41,9 +43,9 @@ export function BannerAnuncio({ local }: { local: LocalAnuncio }) {
   if (!anuncio) return null;
 
   return (
-    <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-4 shadow-sm space-y-2.5">
+    <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 shadow-sm space-y-2.5">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-white/80 px-2 py-0.5 rounded-md border border-emerald-100">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-white px-2 py-0.5 rounded-md border border-emerald-100">
           Patrocinado
         </span>
       </div>
@@ -60,7 +62,7 @@ export function BannerAnuncio({ local }: { local: LocalAnuncio }) {
           <h4 className="font-bold text-sm text-slate-800 leading-snug">
             {anuncio.titulo}
           </h4>
-          <p className="text-xs text-slate-600 mt-0.5 line-clamp-2">
+          <p className="text-xs text-slate-600 mt-0.5">
             {anuncio.descricao}
           </p>
         </div>
