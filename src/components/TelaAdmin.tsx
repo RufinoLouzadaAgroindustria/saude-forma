@@ -555,46 +555,57 @@ export function TelaAdmin() {
             ) : (
               <div className="divide-y divide-slate-100">
                 {anuncios.map((ad) => (
-<span
-className={'inline-block text-[10px] font-bold uppercase px-2 py-0.5 rounded-md mr-2 ' + (ad.ativo ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500')}
->
-{ad.ativo ? 'Ativo' : 'Pausado'}
+                  <div key={ad.id} className="py-3 space-y-2">
+                    <div className="flex justify-between items-start gap-2">
+                      <div>
+                        <span
+                          className={
+                            'inline-block text-[10px] font-bold uppercase px-2 py-0.5 rounded-md mr-2 ' +
+                            (ad.ativo
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : 'bg-slate-100 text-slate-500')
+                          }
+                        >
+                          {ad.ativo ? 'Ativo' : 'Pausado'}
+                        </span>
+                        <span className="text-[11px] font-semibold text-slate-500">
+                          {ad.local_exibicao}
+                        </span>
+                        <h3 className="text-sm font-bold text-slate-800 mt-1">
+                          {ad.titulo}
+                        </h3>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="text-lg font-bold text-emerald-700">
+                          {ad.cliques || 0}
+                        </span>
+                        <p className="text-[10px] text-slate-400">cliques</p>
+                      </div>
+                    </div>
 
-
-{ad.local_exibicao}
-
-
-{ad.titulo}
-
-
-
-
-{ad.cliques || 0}
-
-cliques
-
-<button
-type="button"
-onClick={() => alternarStatusAnuncio(ad.id, ad.ativo)}
-className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50"
->
-{ad.ativo ? 'Pausar' : 'Ativar'}
-
-<button
-type="button"
-onClick={() => excluirAnuncio(ad.id)}
-className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-50 text-red-700 hover:bg-red-100"
->
-Excluir
-
-
-
-))}
-
-)}
-
-
-)}
-
-);
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => alternarStatusAnuncio(ad.id, ad.ativo)}
+                        className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50"
+                      >
+                        {ad.ativo ? 'Pausar' : 'Ativar'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => excluirAnuncio(ad.id)}
+                        className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-50 text-red-700 hover:bg-red-100"
+                      >
+                        Excluir
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
