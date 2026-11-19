@@ -100,6 +100,7 @@ export function DashboardHoje({ userId }: DashboardProps) {
         <p className="text-sm text-slate-500">Resumo de Hoje</p>
         <h1 className="text-2xl font-bold text-slate-800">Olá, {nome}</h1>
       </header>
+      <BannerAnuncio local="dashboard" />
 
       <section className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
         <div className="flex justify-between items-baseline mb-4">
@@ -191,8 +192,7 @@ export function DashboardHoje({ userId }: DashboardProps) {
         >
           {treinoConcluido ? 'Treino Concluído Hoje' : 'Marcar Treino como Concluído'}
         </button>
-      </section>0
-<BannerAnuncio local="dashboard" />
+      </section>
     </div>
   );
 }
