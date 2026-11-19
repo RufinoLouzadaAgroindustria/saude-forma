@@ -512,7 +512,8 @@ export function TelaAdmin() {
                 <option value="dashboard">Tela Hoje</option>
                 <option value="alimentacao">Tela Alimentação</option>
                 <option value="treinos">Tela Treinos</option>
-              </select>
+                <option value="evolucao">Tela Evolução</option>
+ </select>
             </div>
             <input
               type="url"
