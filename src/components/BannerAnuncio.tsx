@@ -10,10 +10,12 @@ interface Anuncio {
   texto_botao: string;
   link_destino: string;
   imagem_url?: string;
+  local_exibicao?: string;
 }
 
 export function BannerAnuncio({ local }: { local: LocalAnuncio }) {
   const [anuncio, setAnuncio] = useState<Anuncio | null>(null);
+  const [erroBusca, setErroBusca] = useState<string>('');
 
   useEffect(() => {
     carregarAnuncio();
@@ -22,15 +24,21 @@ export function BannerAnuncio({ local }: { local: LocalAnuncio }) {
   const carregarAnuncio = async () => {
     const { data, error } = await supabase
       .from('anuncios')
-      .select('id, titulo, descricao, texto_botao, link_destino, imagem_url')
-      .eq('local_exibicao', local)
-      .eq('ativo', true)
-      .order('id', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .select('*')
+      .eq('ativo', true);
 
-    if (!error && data) {
-      setAnuncio(data);
+    if (error) {
+      setErroBusca(error.message);
+      return;
+    }
+
+    if (data && data.length > 0) {
+      const doLocal = data.find(
+        (a: any) =>
+          String(a.local_exibicao || '').trim().toLowerCase() ===
+          local.toLowerCase()
+      );
+      setAnuncio(doLocal || data[0]);
     }
   };
 
@@ -39,6 +47,14 @@ export function BannerAnuncio({ local }: { local: LocalAnuncio }) {
     await supabase.rpc('registrar_clique_anuncio', { p_anuncio_id: anuncio.id });
     window.open(anuncio.link_destino, '_blank', 'noopener,noreferrer');
   };
+
+  if (erroBusca) {
+    return (
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
+        Aviso banner: {erroBusca}
+      </div>
+    );
+  }
 
   if (!anuncio) return null;
 
@@ -62,9 +78,7 @@ export function BannerAnuncio({ local }: { local: LocalAnuncio }) {
           <h4 className="font-bold text-sm text-slate-800 leading-snug">
             {anuncio.titulo}
           </h4>
-          <p className="text-xs text-slate-600 mt-0.5">
-            {anuncio.descricao}
-          </p>
+          <p className="text-xs text-slate-600 mt-0.5">{anuncio.descricao}</p>
         </div>
       </div>
 
