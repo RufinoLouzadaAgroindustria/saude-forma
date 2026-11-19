@@ -296,7 +296,7 @@ export function TelaAdmin() {
                     equipamento_necessario: e.target.value,
                   })
                 }
-                className="p-2.5 border border-slate-300 rounded-xl text-xs bg-white"
+                className="p-2.5 border border-slate-300 rounded-xl text-xs bg-white">
               <select
                 value={novoEx.equipamento_necessario}
                 onChange={(e) =>
