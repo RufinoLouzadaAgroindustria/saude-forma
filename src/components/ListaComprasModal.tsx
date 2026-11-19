@@ -12,8 +12,11 @@ interface ItemConsolidado {
 
 interface ListaComprasModalProps {
   userId: string;
-  aberto: boolean;
-  onFechar: () => void;
+  aberto?: boolean;
+  open?: boolean;
+  isOpen?: boolean;
+  onFechar?: () => void;
+  onClose?: () => void;
 }
 
 const MAPA_SETORES: Record<string, string> = {
@@ -27,18 +30,26 @@ const MAPA_SETORES: Record<string, string> = {
 export function ListaComprasModal({
   userId,
   aberto,
+  open,
+  isOpen,
   onFechar,
+  onClose,
 }: ListaComprasModalProps) {
+  const temPropControle =
+    aberto !== undefined || open !== undefined || isOpen !== undefined;
+  const estaAberto = temPropControle ? Boolean(aberto ?? open ?? isOpen) : true;
+  const fecharModal = onFechar || onClose || (() => {});
+
   const [itens, setItens] = useState<ItemConsolidado[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiado, setCopiado] = useState(false);
 
   useEffect(() => {
-    if (aberto) {
+    if (estaAberto) {
       gerarListaSemanal();
       setCopiado(false);
     }
-  }, [aberto, userId]);
+  }, [estaAberto, userId]);
 
   const gerarListaSemanal = async () => {
     setLoading(true);
@@ -114,7 +125,7 @@ export function ListaComprasModal({
     setTimeout(() => setCopiado(false), 3000);
   };
 
-  if (!aberto) return null;
+  if (!estaAberto) return null;
 
   const setores = Array.from(new Set(itens.map((i) => i.setor)));
 
@@ -131,7 +142,7 @@ export function ListaComprasModal({
             </p>
           </div>
           <button
-            onClick={onFechar}
+            onClick={fecharModal}
             className="p-2 text-slate-400 hover:text-slate-600 font-bold"
           >
             ✕
