@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
-export type LocalAnuncio = 'dashboard' | 'alimentacao' | 'treinos' | 'lista_compras';
+export type LocalAnuncio = 'dashboard' | 'alimentacao' | 'treinos' | 'lista_compras' | 'evolucao';
 
 interface Anuncio {
   id: number;
