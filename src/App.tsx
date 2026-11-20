@@ -173,125 +173,23 @@ function TelaAutenticacao() {
     setMensagem('');
 
     try {
-      if (modoCadastro) {
-        const { error } = await supabase.auth.signUp({ email, password: senha });
-        if (error) throw error;
-        setModoCadastro(false);
-        setMensagem(
-          'Cadastro realizado! Enviamos um link de confirmação para o seu e-mail. Verifique sua caixa de entrada (ou spam), clique no link e faça login abaixo.'
-        );
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
+            if (modoCadastro) {
+        const { data, error } = await supabase.auth.signUp({
           email,
           password: senha,
         });
         if (error) throw error;
-        localStorage.setItem(
-          'saude_forma_manter_conectado',
-          String(manterConectado)
-        );
+
+        if (!data?.session) {
+          await supabase.auth.signInWithPassword({
+            email,
+            password: senha,
+          });
+        }
+
+        localStorage.setItem('saude_forma_manter_conectado', 'true');
         window.location.reload();
-      }
-    } catch (err: any) {
-      setMensagem(err.message || 'Erro ao autenticar. Verifique seus dados.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-center p-4 max-w-md mx-auto">
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-5">
-        <div className="text-center space-y-1">
-          <span className="inline-block px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-full">
-            Saúde & Forma
-          </span>
-          <h1 className="text-2xl font-bold text-slate-800">
-            {modoCadastro ? 'Criar sua conta' : 'Bem-vindo de volta'}
-          </h1>
-          <p className="text-sm text-slate-500">
-            Nutrição e condicionamento físico adaptados a você
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              E-mail
-            </label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="seu@email.com"
-              className="w-full p-3 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Senha
-            </label>
-            <input
-              type="password"
-              required
-              minLength={6}
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
-              placeholder="Mínimo 6 caracteres"
-              className="w-full p-3 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500"
-            />
-          </div>
-
-          {!modoCadastro && (
-            <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={manterConectado}
-                onChange={(e) => setManterConectado(e.target.checked)}
-                className="w-4 h-4 accent-emerald-600 rounded"
-              />
-              <span>Manter-me conectado ao longo do dia</span>
-            </label>
-          )}
-
-          {mensagem && (
-            <p className="text-xs text-emerald-900 bg-emerald-50 p-3 rounded-xl border border-emerald-200">
-              {mensagem}
-            </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3.5 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 disabled:opacity-50"
-          >
-            {loading
-              ? 'Aguarde...'
-              : modoCadastro
-              ? 'Cadastrar e Começar'
-              : 'Entrar'}
-          </button>
-        </form>
-
-        <div className="text-center pt-2">
-          <button
-            type="button"
-            onClick={() => {
-              setModoCadastro(!modoCadastro);
-              setMensagem('');
-            }}
-            className="text-sm font-medium text-emerald-700 hover:underline"
-          >
-            {modoCadastro
-              ? 'Já tem uma conta? Faça login'
-              : 'Ainda não tem conta? Cadastre-se'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+      } else {
 
 function TelaEvolucao({ userId }: { userId: string }) {
   const [pesoAtual, setPesoAtual] = useState('');
