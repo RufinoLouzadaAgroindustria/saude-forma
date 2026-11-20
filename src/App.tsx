@@ -328,9 +328,11 @@ function TelaEvolucao({ userId }: { userId: string }) {
             ))}
           </div>
         )}
-      </section>
+         </section>
     </div>
   );
 }
+}
 
 export default App;
+
