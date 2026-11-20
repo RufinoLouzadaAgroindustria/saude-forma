@@ -167,13 +167,13 @@ function TelaAutenticacao() {
   const [loading, setLoading] = useState(false);
   const [mensagem, setMensagem] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setMensagem('');
 
     try {
-            if (modoCadastro) {
+      if (modoCadastro) {
         const { data, error } = await supabase.auth.signUp({
           email,
           password: senha,
@@ -190,59 +190,24 @@ function TelaAutenticacao() {
         localStorage.setItem('saude_forma_manter_conectado', 'true');
         window.location.reload();
       } else {
-
-function TelaEvolucao({ userId }: { userId: string }) {
-  const [pesoAtual, setPesoAtual] = useState('');
-  const [cinturaAtual, setCinturaAtual] = useState('');
-  const [historico, setHistorico] = useState<any[]>([]);
-  const [salvando, setSalvando] = useState(false);
-
-  useEffect(() => {
-    carregarHistorico();
-  }, [userId]);
-
-  const carregarHistorico = async () => {
-    const { data } = await supabase
-      .from('logs_evolucao')
-      .select('data_registro, peso_kg, cintura_cm, treino_concluido')
-      .eq('usuario_id', userId)
-      .not('peso_kg', 'is', null)
-      .order('data_registro', { ascending: false })
-      .limit(10);
-
-    if (data) setHistorico(data);
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password: senha,
+        });
+        if (error) throw error;
+        localStorage.setItem(
+          'saude_forma_manter_conectado',
+          String(manterConectado)
+        );
+        window.location.reload();
+      }
+    } catch (err: any) {
+      setMensagem(err.message || 'Erro ao autenticar. Verifique seus dados.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const registrarPesagem = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!pesoAtual) return;
-
-    setSalvando(true);
-    const hojeStr = new Date().toISOString().split('T');
-
-    await supabase.from('logs_evolucao').upsert(
-      {
-        usuario_id: userId,
-        data_registro: hojeStr,
-        peso_kg: Number(pesoAtual),
-        cintura_cm: cinturaAtual ? Number(cinturaAtual) : null,
-      },
-      { onConflict: 'usuario_id,data_registro' }
-    );
-
-    setPesoAtual('');
-    setCinturaAtual('');
-    setSalvando(false);
-    carregarHistorico();
-  };
-
-   const sairDaConta = async () => {
-    await supabase.auth.signOut();
-    localStorage.clear();
-    window.location.href = '/';
-  };
-
-  return (
     <div className="min-h-screen bg-slate-50 pb-24 max-w-md mx-auto p-4 space-y-4">
       <header className="pt-2 flex justify-between items-center">
         <div>
@@ -331,7 +296,6 @@ function TelaEvolucao({ userId }: { userId: string }) {
          </section>
     </div>
   );
-}
 }
 
 export default App;
