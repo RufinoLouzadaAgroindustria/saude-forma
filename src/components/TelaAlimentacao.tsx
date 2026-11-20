@@ -36,12 +36,36 @@ const NOMES_REFEICOES: Record<string, string> = {
   jantar: 'Jantar',
 };
 
+const METAS_PADRAO: MetasCalculadas = {
+  tmb: 2000,
+  get: 2000,
+  calorias_diarias: 2000,
+  proteinas_g: 140,
+  carboidratos_g: 220,
+  gorduras_g: 60,
+  agua_ml: 2500,
+};
+
+const ALIMENTOS_ANIMAIS = [
+  'frango',
+  'ovo',
+  'tilápia',
+  'tilapia',
+  'patinho',
+  'bovino',
+  'carne',
+  'peixe',
+  'iogurte',
+  'leite',
+  'queijo',
+];
+
 export function TelaAlimentacao({ userId }: TelaAlimentacaoProps) {
   const [refeicoes, setRefeicoes] = useState<RefeicaoComItens[]>([]);
   const [loading, setLoading] = useState(true);
-  const [gerandoCardapio, setGerandoCardapio] = useState(false);
+  const [gerando, setGerando] = useState(false);
   const [estiloCardapio, setEstiloCardapio] = useState<EstiloCardapio>('tradicional');
-  const [metasAtivas, setMetasAtivas] = useState<MetasCalculadas | null>(null);
+  const [metas, setMetas] = useState<MetasCalculadas | null>(null);
   const [localTreino, setLocalTreino] = useState<'casa' | 'academia' | 'parque'>('casa');
   const [restricoesSaude, setRestricoesSaude] = useState<string[]>([]);
   const [erroGeracao, setErroGeracao] = useState('');
@@ -101,23 +125,18 @@ export function TelaAlimentacao({ userId }: TelaAlimentacaoProps) {
       setRestricoesSaude(resultadoUsuario.data.restricoes_saude || []);
     }
     if (resultadoMetas.data) {
-      setMetasAtivas(resultadoMetas.data as MetasCalculadas);
+      setMetas(resultadoMetas.data as MetasCalculadas);
     }
     setLoading(false);
   };
 
   const gerarNovoCardapio = async () => {
-    if (!metasAtivas) {
-      setErroGeracao('Não encontramos metas nutricionais ativas. Atualize seu perfil e tente novamente.');
-      return;
-    }
-
-    setGerandoCardapio(true);
+    setGerando(true);
     setErroGeracao('');
     try {
       await gerarPlanoInicialUsuario(
         userId,
-        metasAtivas,
+        metas || METAS_PADRAO,
         localTreino,
         restricoesSaude,
         estiloCardapio
@@ -127,7 +146,7 @@ export function TelaAlimentacao({ userId }: TelaAlimentacaoProps) {
       console.error('Erro ao gerar cardápio:', error);
       setErroGeracao('Não foi possível gerar o cardápio. Tente novamente.');
     } finally {
-      setGerandoCardapio(false);
+      setGerando(false);
     }
   };
 
@@ -163,17 +182,22 @@ export function TelaAlimentacao({ userId }: TelaAlimentacaoProps) {
       .eq('grupo_alimentar', item.alimentos.grupo_alimentar)
       .neq('id', item.alimentos.id);
 
-    if (alimentosMesmoGrupo) {
-      const calculados = alimentosMesmoGrupo.map((novoAlimento: Alimento) =>
-        calcularSubstituicaoAlimento(
-          item.alimentos,
-          item.quantidade_gramas,
-          novoAlimento
-        )
+    const opcoesFiltradas = (alimentosMesmoGrupo || []).filter((alimento: Alimento) => {
+      if (estiloCardapio !== 'vegano') return true;
+      const nomeNormalizado = alimento.nome.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      return !ALIMENTOS_ANIMAIS.some((termo) =>
+        nomeNormalizado.includes(termo.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase())
       );
-      setOpcoesSubstituicao(calculados);
-    }
+    });
 
+    const calculados = opcoesFiltradas.map((novoAlimento: Alimento) =>
+      calcularSubstituicaoAlimento(
+        item.alimentos,
+        item.quantidade_gramas,
+        novoAlimento
+      )
+    );
+    setOpcoesSubstituicao(calculados);
     setCarregandoOpcoes(false);
   };
 
@@ -230,6 +254,7 @@ export function TelaAlimentacao({ userId }: TelaAlimentacaoProps) {
           Lista de Compras
         </button>
       </header>
+      <BannerAnuncio local="alimentacao" />
 
       <section className="rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm space-y-3">
         <div>
@@ -261,10 +286,10 @@ export function TelaAlimentacao({ userId }: TelaAlimentacaoProps) {
         <button
           type="button"
           onClick={gerarNovoCardapio}
-          disabled={gerandoCardapio || !metasAtivas}
+          disabled={gerando}
           className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {gerandoCardapio ? 'Gerando cardápio...' : 'Gerar Novo Cardápio'}
+          {gerando ? 'Gerando cardápio...' : 'Gerar Novo Cardápio'}
         </button>
         {erroGeracao && <p role="alert" className="text-xs text-rose-600">{erroGeracao}</p>}
       </section>
@@ -344,7 +369,6 @@ export function TelaAlimentacao({ userId }: TelaAlimentacaoProps) {
           </section>
         );
       })}
-<BannerAnuncio local="alimentacao" />
       {listaComprasAberta && (
         <ListaComprasModal userId={userId} onClose={() => setListaComprasAberta(false)} />
       )}
